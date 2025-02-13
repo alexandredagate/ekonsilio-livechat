@@ -25,7 +25,7 @@ services:
       - "14000:4000"
     volumes:
       - ./backend:/app
-    command: npm run start:dev
+    command: sh -c "npm run migration:run && npm run start:dev"
 
   frontend-admin:
     build:
