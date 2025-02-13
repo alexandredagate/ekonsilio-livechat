@@ -14,7 +14,7 @@ export class Message {
   @JoinColumn()
   conversation: Conversation;
 
-  @ManyToOne(() => User, user => user.messages, { nullable: true })
+  @ManyToOne(() => User, user => user.messages, { nullable: true, eager: true })
   @JoinColumn()
   operator?: User;
 
