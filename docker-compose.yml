@@ -20,6 +20,7 @@ services:
       - database
     environment:
       - DATABASE_URL=postgresql://admin:adminpassword@database:5432/livechat
+      - JWT_SECRET=94EBC4537FB849388DACE2399FE9F1ADF1ADA34BDA3852D5E2868993CD
       - PORT=4000
     ports:
       - "14000:4000"
