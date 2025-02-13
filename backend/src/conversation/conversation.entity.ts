@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Message } from "../message/message.entity";
 
 @Entity()
 export class Conversation {
@@ -7,6 +8,9 @@ export class Conversation {
   
   @Column("varchar")
   userAgent: string;
+
+  @OneToMany(() => Message, message => message.conversation)
+  messages: Message[];
 
   @CreateDateColumn()
   createdAt: Date;
