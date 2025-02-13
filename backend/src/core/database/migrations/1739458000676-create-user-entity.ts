@@ -5,6 +5,7 @@ export class CreateUserEntity1739458000676 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "user" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "username" character varying(255) NOT NULL, "password" character varying NOT NULL, CONSTRAINT "PK_cace4a159ff9f2512dd42373760" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`INSERT INTO "user" (username, password) VALUES ('genius0212', '$2a$12$j7A9pVnqd/fc8RdS5XojP.Gg03Ou9Oe98gXsWqOVP1qORbg2W1K6q')`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
