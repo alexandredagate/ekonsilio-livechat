@@ -12,7 +12,13 @@ export class ConversationService {
   ) { }
 
   async FindAll(): Promise<Conversation[]> {
-    return this.conversationRepository.find();
+    return this.conversationRepository.find({
+      order: {
+        messages: {
+          createdAt: "DESC"
+        }
+      }
+    });
   }
 
   async FindOne(id: string): Promise<Conversation | null> {
