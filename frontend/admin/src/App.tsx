@@ -1,34 +1,86 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { LoginPage } from "./pages/Login"
+import { createContext, useEffect, useState } from "react"
+import { User } from "./core/types/User";
+import { OperatorPage } from "./pages/Operator";
+import { AuthService } from "./core/services/AuthService";
+import { LoadingPage } from "./pages/Loading";
+import { notifications } from "@mantine/notifications";
+
+type AppContextType = {
+  user: User | null;
+  login: (token: string) => void;
+  logout: () => void;
+}
+
+export const AppContext = createContext<AppContextType>({
+  user: null,
+  login: () => { },
+  logout: () => { },
+});
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  function login(token: string): void {
+    localStorage.setItem('token', token);
+    AuthService.Me()
+      .then((_user) => {
+        setUser(_user);
+        notifications.show({
+          title: "Welcome back!",
+          message: `Hello, ${_user.username}. Enjoy your session 💪`,
+          color: "green",
+        });
+      })
+      .catch(() => {
+        setUser(null);
+        localStorage.removeItem('token');
+      });
+  }
+
+  function logout(): void {
+    notifications.show({
+      title: "Session ended!",
+      message: `Thank you ${user?.username}. See you soon 👋`,
+      color: "green",
+    });
+    localStorage.removeItem('token');
+    setUser(null);
+  }
+
+  useEffect(() => {
+    if (!localStorage.getItem('token')) {
+      setLoading(false);
+      setUser(null);
+    } else {
+      AuthService.Me()
+        .then(setUser)
+        .catch(() => {
+          setUser(null);
+          notifications.show({
+            title: "Session expired!",
+            message: "Your session has expired"
+          })
+        })
+        .finally(() => setLoading(false));
+    }
+  }, []);
+
+  if (loading) return <LoadingPage />; // Loading screen during server is checking for token validity
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <AppContext.Provider value={{ user, login, logout }}>
+      <main className="bg-gray-100 w-screen h-screen p-2 flex flex-col items-stretch">
+        <section className="bg-white h-full rounded-xl shadow flex justify-center items-center">
+          {
+            !user ?
+            <LoginPage /> :
+            <OperatorPage />
+          }
+        </section>
+      </main>
+    </AppContext.Provider>
   )
 }
 
