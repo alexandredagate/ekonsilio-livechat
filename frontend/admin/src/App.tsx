@@ -72,7 +72,7 @@ function App() {
   return (
     <AppContext.Provider value={{ user, login, logout }}>
       <main className="bg-gray-100 w-screen h-screen p-2 flex flex-col items-stretch">
-        <section className="bg-white h-full rounded-xl shadow flex justify-center items-center">
+        <section className="bg-white h-full rounded-xl shadow flex justify-center items-center overflow-hidden">
           {
             !user ?
             <LoginPage /> :
