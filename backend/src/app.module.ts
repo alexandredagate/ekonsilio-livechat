@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConversationModule } from './conversation/conversation.module';
 import { MessageModule } from './message/message.module';
+import { AppGateway } from './app.gateway';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
@@ -23,6 +24,6 @@ import { JwtModule } from '@nestjs/jwt';
     MessageModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AppGateway],
 })
 export class AppModule {}
