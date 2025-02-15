@@ -24,6 +24,7 @@ services:
       - PORT=4000
     ports:
       - "14000:4000"
+      - "8080:80"
     volumes:
       - ./backend:/app
       - /app/node_modules/bcrypt/ # INFO: Bcrypt w/ Docker Context causes issue. We need to bind the volume to prevent Docker to copy it from local.
