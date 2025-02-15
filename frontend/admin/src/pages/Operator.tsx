@@ -1,18 +1,56 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { UserActionMenu } from "../components/UserActionMenu";
 import { Conversation } from "../core/types/Conversation";
 import { NoActiveConversation } from "../components/NoActiveConversation";
 import { useConversations } from "../core/functions/hooks/useConversations";
 import { ConversationButton } from "../components/ConversationButton";
 import { ConversationPanel } from "../components/ConversationPanel";
+import { LCSocket } from "../Socket";
+import { Message } from "../core/types/Message";
 
 export function OperatorPage() {
-  const { conversations } = useConversations();
+  const { conversations, pushMessageIntoConversation } = useConversations();
   const [activeConversation, setActiveConversation] = useState<Conversation>();
 
   function OnClickConversation(conversation: Conversation) {
+    if (activeConversation) { // if user was in a previous conversation then left it first
+      LCSocket.GetInstance().emit("close-conversation", { conversation: activeConversation.id });
+    }
+
+    LCSocket.GetInstance().emit("open-conversation", { conversation: conversation.id });
     setActiveConversation(conversation);
   }
+
+  function OnSend(text: string): void {
+    if (activeConversation) {
+      LCSocket.GetInstance().emit("message", {
+        text,
+        conversation: activeConversation.id
+      });
+    }
+  }
+
+  function onReceiveMessage(message: Message) {
+    if (activeConversation && message.conversation.id === activeConversation.id) {
+      setActiveConversation(o => {
+        if (!o) return o;
+
+        const temp = structuredClone(o);
+        temp.messages.push(message);
+        return temp;
+      });
+    }
+
+    pushMessageIntoConversation(message, message.conversation.id);
+  }
+
+  useEffect(() => {
+    LCSocket.GetInstance().on("message", onReceiveMessage);
+
+    return () => {
+      LCSocket.GetInstance().off("message", onReceiveMessage);
+    }
+  }, [onReceiveMessage]);
 
   return (
     <section className="w-full h-full flex flex-row items-start">
@@ -36,7 +74,7 @@ export function OperatorPage() {
           {
             !activeConversation ?
             <NoActiveConversation /> :
-            <ConversationPanel conversation={ activeConversation } />
+            <ConversationPanel conversation={ activeConversation } onSend={ OnSend } />
           }
         </div>
       </section>
