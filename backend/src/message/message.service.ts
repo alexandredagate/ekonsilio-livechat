@@ -11,11 +11,11 @@ export class MessageService {
     private readonly messageRepository: Repository<Message>
   ) { }
 
-  async CreateMessage(conversationId: string, text: string, operator?: User): Promise<Message> {
+  async CreateMessage(conversationId: string, text: string, operatorId?: string): Promise<Message> {
     const message = this.messageRepository.create({
       conversation: { id: conversationId },
       text,
-      operator,
+      operator: { id: operatorId },
     });
 
     return this.messageRepository.save(message);
