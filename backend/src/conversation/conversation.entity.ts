@@ -6,8 +6,8 @@ export class Conversation {
   @PrimaryGeneratedColumn("uuid")
   id: string;
   
-  @Column("varchar")
-  userAgent: string;
+  @Column("varchar", { nullable: true })
+  userAgent?: string;
 
   @OneToMany(() => Message, message => message.conversation, { eager: true })
   messages: Message[];
