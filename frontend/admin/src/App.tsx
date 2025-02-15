@@ -5,6 +5,7 @@ import { OperatorPage } from "./pages/Operator";
 import { AuthService } from "./core/services/AuthService";
 import { LoadingPage } from "./pages/Loading";
 import { notifications } from "@mantine/notifications";
+import { LCSocket } from "./Socket";
 
 type AppContextType = {
   user: User | null;
@@ -27,6 +28,7 @@ function App() {
     AuthService.Me()
       .then((_user) => {
         setUser(_user);
+        LCSocket.Initialize();
         notifications.show({
           title: "Welcome back!",
           message: `Hello, ${_user.username}. Enjoy your session 💪`,
@@ -35,6 +37,7 @@ function App() {
       })
       .catch(() => {
         setUser(null);
+        LCSocket.Close();
         localStorage.removeItem('token');
       });
   }
@@ -45,6 +48,7 @@ function App() {
       message: `Thank you ${user?.username}. See you soon 👋`,
       color: "green",
     });
+    LCSocket.Close();
     localStorage.removeItem('token');
     setUser(null);
   }
@@ -55,9 +59,13 @@ function App() {
       setUser(null);
     } else {
       AuthService.Me()
-        .then(setUser)
+        .then(user => {
+          setUser(user);
+          LCSocket.Initialize();
+        })
         .catch(() => {
           setUser(null);
+          LCSocket.Close();
           notifications.show({
             title: "Session expired!",
             message: "Your session has expired"
