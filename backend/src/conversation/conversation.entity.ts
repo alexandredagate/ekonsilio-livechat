@@ -1,5 +1,6 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Message } from "../message/message.entity";
+import { User } from "../user/user.entity";
 
 @Entity()
 export class Conversation {
@@ -9,9 +10,13 @@ export class Conversation {
   @Column("varchar", { nullable: true })
   userAgent?: string;
 
-  @OneToMany(() => Message, message => message.conversation, { eager: true })
+  @OneToMany(() => Message, message => message.conversation, { eager: true, cascade: true })
   messages: Message[];
 
+  @ManyToOne(() => User, user => user.conversations, { eager: true })
+  @JoinColumn()
+  operator: User;
+  
   @CreateDateColumn()
   createdAt: Date;
 

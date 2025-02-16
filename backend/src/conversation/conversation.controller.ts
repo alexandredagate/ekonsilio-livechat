@@ -3,6 +3,8 @@ import { ConversationService } from "./conversation.service";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Conversation } from "./conversation.entity";
 import { CreateConversationDto } from "./dto/create-conversation.dto";
+import { AuthUser } from "../auth/auth-user";
+import { User } from "../user/user.entity";
 
 @Controller("conversation")
 export class ConversationController {
@@ -12,8 +14,8 @@ export class ConversationController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async FindAllConversations(): Promise<Conversation[]> {
-    return this.conversationService.FindAll();
+  async FindAllConversations(@AuthUser() user: User): Promise<Conversation[]> {
+    return this.conversationService.FindAllFor(user.id);
   }
 
   @Get(":id")
@@ -24,10 +26,5 @@ export class ConversationController {
     if (!conversation) throw new NotFoundException();
 
     return conversation;
-  }
-
-  @Post()
-  async CreateConversation(@Body() createConversationDto: CreateConversationDto): Promise<Conversation> {
-    return this.conversationService.Create(createConversationDto);
   }
 }

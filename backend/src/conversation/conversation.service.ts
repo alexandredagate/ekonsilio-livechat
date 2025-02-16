@@ -12,7 +12,7 @@ export class ConversationService {
     private readonly conversationRepository: Repository<Conversation>
   ) { }
 
-  async FindAll(): Promise<Conversation[]> {
+  async FindAllFor(user: string): Promise<Conversation[]> {
     return this.conversationRepository
       .createQueryBuilder("conversation")
       .leftJoinAndSelect("conversation.messages", "message")
@@ -20,15 +20,16 @@ export class ConversationService {
       .leftJoin(
         (subQuery) =>
           subQuery
-            .select("m.conversationId", "conversation_id") // 🔥 Alias correct
-            .addSelect("MAX(m.createdAt)", "last_message_date") // 🔥 On récupère la date du dernier message
+            .select("m.conversationId", "conversation_id")
+            .addSelect("MAX(m.createdAt)", "last_message_date")
             .from("message", "m")
             .groupBy("m.conversationId"),
-        "last_message", // 🔥 Alias bien défini
-        "last_message.conversation_id = conversation.id" // 🔥 Utilisation correcte de l'alias
+        "last_message",
+        "last_message.conversation_id = conversation.id"
       )
-      .orderBy("last_message.last_message_date", "DESC") // 🔥 Trier les conversations par dernier message DESC
-      .addOrderBy("message.createdAt", "ASC") // 🔥 Trier les messages par ordre ASC
+      .orderBy("last_message.last_message_date", "DESC")
+      .addOrderBy("message.createdAt", "ASC")
+      .where("conversation.operatorId = :operator", { operator: user })
       .getMany();
   }
 
@@ -36,8 +37,24 @@ export class ConversationService {
     return this.conversationRepository.findOneBy({ id });
   }
 
+  async CountActiveFor(userId: string): Promise<number> {
+    return this.conversationRepository.count({
+      where: {
+        operator: {
+          id: userId
+        }
+      }
+    });
+  }
+
   async Create(createConversationDto: CreateConversationDto): Promise<Conversation> {
-    const conversation = this.conversationRepository.create(createConversationDto);
+    const conversation = this.conversationRepository.create({
+      userAgent: createConversationDto.userAgent,
+      operator: { id: createConversationDto.operator },
+      messages: [
+        { text: createConversationDto.message }
+      ]
+    });
 
     return this.conversationRepository.save(conversation);
   }
