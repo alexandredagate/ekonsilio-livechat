@@ -11,13 +11,13 @@ export class MessageService {
     private readonly messageRepository: Repository<Message>
   ) { }
 
-  async CreateMessage(conversationId: string, text: string, operatorId?: string): Promise<Message> {
-    const message = this.messageRepository.create({
+  async CreateMessage(conversationId: string, text: string, operatorId?: string): Promise<Message | null> {
+    const message = await this.messageRepository.save({
       conversation: { id: conversationId },
       text,
       operator: { id: operatorId },
     });
 
-    return this.messageRepository.save(message);
+    return this.messageRepository.findOneBy({ id: message.id });
   }
 }

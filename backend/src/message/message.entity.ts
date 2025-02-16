@@ -11,8 +11,11 @@ export class Message {
   text: string;
 
   @ManyToOne(() => Conversation, conversation => conversation.messages)
-  @JoinColumn()
+  @JoinColumn({ name: "conversationId" })
   conversation: Conversation;
+ 
+  @Column({ nullable: false })
+  conversationId: string;
 
   @ManyToOne(() => User, user => user.messages, { nullable: true, eager: true })
   @JoinColumn()

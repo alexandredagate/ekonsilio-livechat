@@ -6,6 +6,8 @@ import { JwtPayload } from "./core/types/jwt-payload.type";
 import { MessageService } from "./message/message.service";
 import { ConversationService } from "./conversation/conversation.service";
 import { Logger } from "@nestjs/common";
+import { User } from "./user/user.entity";
+import { UserService } from "./user/user.service";
 
 @WebSocketGateway(80, {
   cors: {
@@ -16,7 +18,7 @@ import { Logger } from "@nestjs/common";
   }
 })
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  private operators: Map<string, string>;
+  private operators: Map<string, [string, number]>;
   private rooms: Map<string, string[]>;
 
   @WebSocketServer()
@@ -26,8 +28,9 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwtService: JwtService,
     private readonly messageService: MessageService,
     private readonly conversationService: ConversationService,
+    private readonly userService: UserService,
   ) {
-    this.operators = new Map<string, string>();
+    this.operators = new Map<string, [string, number]>(); // Key: Socket ID, Value: Array[ID Of the Operator, Amount of active Conversaton he has]
     this.rooms = new Map<string, string[]>();
   }
 
@@ -83,14 +86,40 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return !this.operators.has(clientId);
   }
 
+  operatorsAreAvailable() {
+    return this.operators.size > 0;
+  }
+
+  async getOperatorForNewConversation(): Promise<[string, User] | null> {
+    if (this.operators.size <= 0) return null;
+
+    let user: string | null = null;
+    let socketId: string | null = null;
+    let count = Infinity;
+
+    this.operators.forEach(([userId, conversationCount], socket) => {
+      if (conversationCount < count) {
+        count = conversationCount;
+        socketId = socket;
+        user = userId;
+      }
+    });
+
+    if (!user || !socketId) return null;
+
+    const _user = await this.userService.FindOne(user);
+    
+    return [socketId, _user!];
+  }
+
   async handleConnection(socket: Socket, ...args: any[]) {
     const { token } = socket.handshake.headers;
 
     if (token && typeof token === "string") {
       try {
         const data = await this.jwtService.verifyAsync<JwtPayload>(token);
-        
-        this.operators.set(socket.id, data.sub);
+        const count = await this.conversationService.CountActiveFor(data.sub);
+        this.operators.set(socket.id, [data.sub, count]);
       } catch {
         socket.disconnect();
       }
@@ -115,7 +144,8 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage("create-conversation")
-  async createConversation(@ConnectedSocket() socket: Socket) {
+  async createConversation(@MessageBody("message") message: string, @ConnectedSocket() socket: Socket) {
+    if (!this.operatorsAreAvailable()) return;
     if (!this.canCreateConversation(socket.id)) return;
 
     if (this.socketIsInAnyConversation(socket.id)) {
@@ -124,13 +154,26 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const userAgent = socket.handshake.headers["user-agent"];
 
-    const conversation = await this.conversationService.Create({ userAgent });
+    const newOperator = await this.getOperatorForNewConversation();
 
-    this.joinRoom(socket, conversation.id);
+    if (!newOperator) return;
+
+    const [operatorSocket, operator] = newOperator;
+
+    const conversation = await this.conversationService.Create({ userAgent, operator: operator.id, message });
+
+    this.joinRoom(socket, conversation.id); // Client side
 
     Logger.log(`${socket.id} created conversation ${conversation.id}`);
     
-    socket.emit("join", conversation);
+    socket.emit("join", conversation); // Client side
+    this.server.to(operatorSocket).emit("new-conversation", conversation); // Operator side
+
+    const operatorEntry = this.operators.get(operatorSocket);
+
+    if (operatorEntry) {
+      this.operators.set(operatorSocket, [operatorEntry[0], operatorEntry[1] + 1]);
+    }
   }
 
   @SubscribeMessage("open-conversation")
@@ -158,8 +201,10 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const message = await this.messageService.CreateMessage(
       body.conversation,
       body.text,
-      this.operators.get(socket.id)
+      this.operators.get(socket.id) ? this.operators.get(socket.id)![0] : undefined
     );
+
+    if (!message) return;
 
     this.server.in(body.conversation).emit("message", message);
   }
