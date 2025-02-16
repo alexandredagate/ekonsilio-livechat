@@ -9,7 +9,7 @@ import { LCSocket } from "../Socket";
 import { Message } from "../core/types/Message";
 
 export function OperatorPage() {
-  const { conversations, pushMessageIntoConversation } = useConversations();
+  const { conversations, pushConversation, pushMessageIntoConversation } = useConversations();
   const [activeConversation, setActiveConversation] = useState<Conversation>();
 
   function OnClickConversation(conversation: Conversation) {
@@ -31,7 +31,8 @@ export function OperatorPage() {
   }
 
   function onReceiveMessage(message: Message) {
-    if (activeConversation && message.conversation.id === activeConversation.id) {
+    console.log(message);
+    if (activeConversation && message.conversationId === activeConversation.id) {
       setActiveConversation(o => {
         if (!o) return o;
 
@@ -41,16 +42,22 @@ export function OperatorPage() {
       });
     }
 
-    pushMessageIntoConversation(message, message.conversation.id);
+    pushMessageIntoConversation(message, message.conversationId);
+  }
+
+  function onNewConversationCreated(conversation: Conversation) {
+    pushConversation(conversation);
   }
 
   useEffect(() => {
     LCSocket.GetInstance().on("message", onReceiveMessage);
+    LCSocket.GetInstance().on("new-conversation", onNewConversationCreated)
 
     return () => {
       LCSocket.GetInstance().off("message", onReceiveMessage);
+      LCSocket.GetInstance().off("new-conversation", onNewConversationCreated);
     }
-  }, [onReceiveMessage]);
+  }, [onReceiveMessage, pushConversation]);
 
   return (
     <section className="w-full h-full flex flex-row items-start">
