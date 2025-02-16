@@ -31,7 +31,15 @@ export function useConversations() {
     })
   }
 
+  function pushConversation(conversation: Conversation) {
+    setConversations(o => {
+      if (o.find(i => i.id === conversation.id)) return o;
+
+      return [conversation, ...o];
+    })
+  }
+
   useEffect(fetchData, []);
 
-  return { conversations, pushMessageIntoConversation };
+  return { conversations, pushConversation, pushMessageIntoConversation };
 }
