@@ -6,14 +6,22 @@ import { MantineProvider } from "@mantine/core";
 import { LCSocket } from "./core/Socket";
 import { ConversationPanel } from "./pages/ConversationPanel";
 import { Message } from "./core/types/Message";
+import { ModalsProvider } from "@mantine/modals";
+import { Notifications } from "@mantine/notifications";
 
 type AppContextType = {
   currentConversation: Conversation | null;
   setCurrentConversation: (conversation: Conversation) => void;
   pushMessage: (message: Message) => void;
+  resetCurrentConversation: () => void;
 }
 
-export const AppContext = createContext<AppContextType>({ currentConversation: null, setCurrentConversation: () => { }, pushMessage: () => { } });
+export const AppContext = createContext<AppContextType>({
+  currentConversation: null,
+  setCurrentConversation: () => { },
+  pushMessage: () => { },
+  resetCurrentConversation: () => { }
+});
 
 function App() {
   const [currentConversation, setCurrentConversation] = useState<Conversation>();
@@ -48,11 +56,16 @@ function App() {
     setSocketConnected(true);
   }
 
+  function resetCurrentConversation() {
+    setCurrentConversation(undefined);
+    localStorage.removeItem("last-conversation");
+  }
+
   useEffect(() => {
     LCSocket.Initialize();
     LCSocket.GetInstance().connect();
     LCSocket.GetInstance().on("connect", OnSocketConnected);
-
+    
     return () => {
       LCSocket.GetInstance().off("connect", OnSocketConnected);
     }
@@ -65,9 +78,11 @@ function App() {
           LCSocket.GetInstance().emit("open-conversation", {
             conversation: conv.id
           });
-
-          console.log("Open conv")
         }
+      })
+      .catch(() => {
+        setCurrentConversation(undefined);
+        localStorage.removeItem("last-conversation");
       })
       .finally(() => setAppLoaded(true))
   }, [socketConnected])
@@ -77,7 +92,9 @@ function App() {
 
   return (
     <MantineProvider>
-      <AppContext.Provider value={{ currentConversation: currentConversation ?? null, setCurrentConversation, pushMessage }}>
+      <ModalsProvider />
+      <Notifications />
+      <AppContext.Provider value={{ currentConversation: currentConversation ?? null, setCurrentConversation, pushMessage, resetCurrentConversation }}>
         <main className="w-screen h-screen bg-gray-100 p-2">
           <section className="rounded-lg bg-white shadow h-full flex justify-center items-center overflow-hidden">
             {

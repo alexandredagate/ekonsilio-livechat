@@ -10,6 +10,9 @@ export class Conversation {
   @Column("varchar", { nullable: true })
   userAgent?: string;
 
+  @Column("boolean", { default: true })
+  active: boolean;
+
   @OneToMany(() => Message, message => message.conversation, { eager: true, cascade: true })
   messages: Message[];
 

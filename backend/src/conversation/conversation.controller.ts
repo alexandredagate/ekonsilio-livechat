@@ -1,8 +1,7 @@
-import { Body, Controller, Get, NotFoundException, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ConversationService } from "./conversation.service";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Conversation } from "./conversation.entity";
-import { CreateConversationDto } from "./dto/create-conversation.dto";
 import { AuthUser } from "../auth/auth-user";
 import { User } from "../user/user.entity";
 
@@ -14,8 +13,10 @@ export class ConversationController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async FindAllConversations(@AuthUser() user: User): Promise<Conversation[]> {
-    return this.conversationService.FindAllFor(user.id);
+  async FindAllConversations(@AuthUser() user: User, @Query() query: any): Promise<Conversation[]> {
+    if (query.includeInactive) return this.conversationService.FindAllFor(user.id, false);
+
+    return this.conversationService.FindAllFor(user.id, true);
   }
 
   @Get(":id")
@@ -25,5 +26,14 @@ export class ConversationController {
     if (!conversation) throw new NotFoundException();
 
     return conversation;
+  }
+
+  @Patch("close-conversation/:id")
+  async CloseConversation(@Param("id") id: string): Promise<Conversation> {
+    const exists = await this.conversationService.Exists(id);
+    
+    if (!exists) throw new NotFoundException();
+
+    return this.conversationService.Close(id);
   }
 }

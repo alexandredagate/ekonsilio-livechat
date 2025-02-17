@@ -39,7 +39,13 @@ export function useConversations() {
     })
   }
 
+  function removeConversation(conversationId: string) {
+    setConversations(o => {
+      return o.filter(i => i.id !== conversationId);
+    });
+  }
+
   useEffect(fetchData, []);
 
-  return { conversations, pushConversation, pushMessageIntoConversation };
+  return { conversations, pushConversation, pushMessageIntoConversation, removeConversation };
 }

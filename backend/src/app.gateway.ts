@@ -101,7 +101,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const operatorId = operatorEntry[0];
 
-    const conversations = await this.conversationService.FindAllFor(operatorId);
+    const conversations = await this.conversationService.FindAllFor(operatorId, true);
 
     conversations.forEach(conv => {
       const { id } = conv;
@@ -199,9 +199,9 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage("open-conversation")
   async openConversation(@MessageBody("conversation") conversation: string, @ConnectedSocket() socket: Socket) {
-    const conversationExists = await this.conversationService.Exists(conversation);
+    const conversationAlived = await this.conversationService.IsActive(conversation);
 
-    if (!conversationExists || this.socketIsInConversation(socket.id, conversation)) return;
+    if (!conversationAlived || this.socketIsInConversation(socket.id, conversation)) return;
 
     this.joinRoom(socket, conversation);
     Logger.log(`${socket.id} joined room ${conversation}`);
@@ -213,7 +213,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.leaveRoom(socket, conversation);
     Logger.log(`${socket.id} has left room ${conversation}`);
-}
+  }
 
   @SubscribeMessage("message")
   async sendMessage(@MessageBody() body: MessageEvent, @ConnectedSocket() socket: Socket) {
@@ -228,5 +228,12 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!message) return;
 
     this.server.in(body.conversation).emit("message", message);
+  }
+
+  @SubscribeMessage("disable-conversation")
+  disableConversation(@MessageBody("conversation") conversation: string, @ConnectedSocket() socket: Socket) {
+    if (!this.socketIsInConversation(socket.id, conversation)) return;
+
+    this.server.in(conversation).emit("close-conversation", conversation);
   }
 }
