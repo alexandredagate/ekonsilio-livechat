@@ -13,6 +13,14 @@
 
 ## Getting started
 
+Clone the project first. Then you've to create .env file in frontend/admin and frontend/client.
+
+Here's defaults values:
+```env
+VITE_API_URL=http://localhost:14000
+VITE_WEBSOCKET_URL=http://localhost:8080
+``` 
+
 To run the project, open a terminal in the project root folder, the run:
 
 ```bash
