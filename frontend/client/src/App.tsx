@@ -8,6 +8,7 @@ import { ConversationPanel } from "./pages/ConversationPanel";
 import { Message } from "./core/types/Message";
 import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
+import { LoadingScreen } from "./pages/LoadingScreen";
 
 type AppContextType = {
   currentConversation: Conversation | null;
@@ -56,6 +57,10 @@ function App() {
     setSocketConnected(true);
   }
 
+  function OnServerDisconnect() {
+    setSocketConnected(false);
+  }
+
   function resetCurrentConversation() {
     setCurrentConversation(undefined);
     localStorage.removeItem("last-conversation");
@@ -65,9 +70,11 @@ function App() {
     LCSocket.Initialize();
     LCSocket.GetInstance().connect();
     LCSocket.GetInstance().on("connect", OnSocketConnected);
+    LCSocket.GetInstance().on("disconnect", OnServerDisconnect);
     
     return () => {
       LCSocket.GetInstance().off("connect", OnSocketConnected);
+      LCSocket.GetInstance().off("disconnect", OnServerDisconnect);
     }
   }, []);
 
@@ -87,8 +94,7 @@ function App() {
       .finally(() => setAppLoaded(true))
   }, [socketConnected])
 
-  if (!socketConnected) return null;
-  if (!appLoaded) return null;
+  if (!socketConnected || !appLoaded) return <LoadingScreen socket={ socketConnected } />;
 
   return (
     <MantineProvider>
