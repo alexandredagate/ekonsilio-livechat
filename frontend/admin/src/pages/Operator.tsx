@@ -31,7 +31,6 @@ export function OperatorPage() {
   }
 
   function onReceiveMessage(message: Message) {
-    console.log(message);
     if (activeConversation && message.conversationId === activeConversation.id) {
       setActiveConversation(o => {
         if (!o) return o;
