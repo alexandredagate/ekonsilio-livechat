@@ -3,7 +3,7 @@ import { Conversation } from "../core/types/Conversation";
 import { Send } from "lucide-react";
 import { MessageBubble } from "./MessageBubble";
 import { ClassNames } from "../core/functions/ClassNames";
-import { useState } from "react";
+import { createRef, useEffect, useState } from "react";
 
 type Props = {
   conversation: Conversation;
@@ -12,6 +12,7 @@ type Props = {
 
 export function ConversationPanel({ conversation, onSend }: Props) {
   const [text, setText] = useState<string>("");
+  const messageContainer = createRef<HTMLDivElement>();
 
   function SendMessage(): void {
     if (text.trim().length <= 0 || !onSend) return;
@@ -27,9 +28,13 @@ export function ConversationPanel({ conversation, onSend }: Props) {
     }
   }
 
+  useEffect(() => {
+    messageContainer.current?.scrollTo(0, messageContainer.current.scrollHeight);
+  }, [conversation, messageContainer]);
+
   return (
     <section className="h-full flex flex-col">
-      <div className="flex flex-col grow overflow-y-auto p-4 gap-4">
+      <div className="flex flex-col grow overflow-y-auto p-4 gap-4" ref={ messageContainer }>
         {
           conversation.messages.map(message => (
             <MessageBubble
