@@ -19,7 +19,6 @@ export class ConversationController {
   }
 
   @Get(":id")
-  @UseGuards(JwtAuthGuard)
   async FindConversation(@Param("id") id: string): Promise<Conversation> {
     const conversation = await this.conversationService.FindOne(id);
 
