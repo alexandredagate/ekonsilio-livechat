@@ -24,9 +24,7 @@ services:
       - "14000:4000"
       - "8080:80"
     volumes:
-      - ./backend:/app
-      - /app/node_modules/bcrypt/ # INFO: Bcrypt w/ Docker Context causes issue. We need to bind the volume to prevent Docker to copy it from local.
-    command: sh -c "npm run migration:run && npm run start:dev"
+      - ./backend/src:/app/src
 
   frontend-admin:
     build:
@@ -38,9 +36,7 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend/admin:/app
-      - /app/node_modules
-    command: sh -c "npm install && npm run dev -- --host"
+      - ./frontend/admin/src:/app/src
     stdin_open: true
     tty: true
 
@@ -54,9 +50,7 @@ services:
     ports:
       - "5174:5173"
     volumes:
-      - ./frontend/client:/app
-      - /app/node_modules
-    command: sh -c "npm install && npm run dev -- --host"
+      - ./frontend/client/src:/app/src
     stdin_open: true
     tty: true
 

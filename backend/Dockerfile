@@ -1,14 +1,13 @@
-FROM node:22
+FROM node:22-alpine
+
+RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-COPY package.json ./
-COPY package-lock.json ./
+COPY . ./
 
-RUN npm install
-
-COPY . .
+RUN ["npm", "install"]
 
 EXPOSE 4000 80
 
-CMD ["npm", "run", "start:dev"]
+ENTRYPOINT ["/bin/sh", "-c", "npm run migration:run && npm run start:dev" ]

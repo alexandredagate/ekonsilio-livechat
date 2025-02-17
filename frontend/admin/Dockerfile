@@ -2,13 +2,10 @@ FROM node:22
 
 WORKDIR /app
 
-COPY package.json ./
-COPY package-lock.json ./
+COPY . ./
 
-RUN npm install
-
-COPY . .
+RUN ["npm", "install"]
 
 EXPOSE 5173
 
-CMD ["npm", "run", "dev"]
+ENTRYPOINT ["/bin/sh", "-c", "npm run dev -- --host" ]
