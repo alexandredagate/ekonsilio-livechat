@@ -75,8 +75,12 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const rooms = this.rooms.get(socket.id);
     
     if (rooms) {
-      rooms.forEach(value => socket.leave(value));
+      rooms.forEach(value => {
+        socket.leave(value);
+        Logger.log(`${socket.id} has left room ${value}`)
+      });
     }
+
 
     this.rooms.delete(socket.id);
   }
@@ -88,6 +92,22 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   operatorsAreAvailable() {
     return this.operators.size > 0;
+  }
+
+  async registerOperator(socket: Socket) {
+    const operatorEntry = this.operators.get(socket.id);
+
+    if (!operatorEntry) return;
+
+    const operatorId = operatorEntry[0];
+
+    const conversations = await this.conversationService.FindAllFor(operatorId);
+
+    conversations.forEach(conv => {
+      const { id } = conv;
+      
+      this.joinRoom(socket, id);
+    });
   }
 
   async getOperatorForNewConversation(): Promise<[string, User] | null> {
@@ -120,6 +140,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const data = await this.jwtService.verifyAsync<JwtPayload>(token);
         const count = await this.conversationService.CountActiveFor(data.sub);
         this.operators.set(socket.id, [data.sub, count]);
+        this.registerOperator(socket);
       } catch {
         socket.disconnect();
       }
